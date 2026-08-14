@@ -1,0 +1,591 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# API-shape coverage analysis - offtake requirements vs. a provider's public API.
+#
+# This is a STATIC analysis: does the provider's API surface (paths + schemas)
+# plausibly satisfy each offtake requirement, based on reading the OpenAPI spec
+# alone? No live account, no test run. See ../README.md for methodology and
+# limitations (structural presence != behavioral correctness).
+#
+# Per entry:
+#   req_id   - matches docs/requirements/offtake-requirements.yaml
+#   status   - present   | the API exposes a matching path/schema
+#              partial   | some but not all of the requirement is covered
+#              absent    | no matching surface found in the spec
+#              not_applicable | the requirement isn't something API shape can
+#                          confirm or deny (facility/compliance/policy prose,
+#                          performance numbers, hardware attestation, etc.)
+#   evidence - list of references into spec/lambda-cloud-openapi.json:
+#              "METHOD /path" for an operation, "schema:Name" for a schema,
+#              "schema:Name.field" for a specific field. Empty for absent/n-a.
+#   notes    - why, in one line.
+
+provider: lambda
+spec: specs/lambda-cloud-openapi.json
+spec_source: https://cloud.lambdalabs.com/api/v1/openapi.json
+spec_title: Lambda Cloud API 1.10.0
+fetched: '2026-08-14'
+mappings:
+  - req_id: BM01
+    status: not_applicable
+    evidence: []
+    notes: Workload benchmark result, not an API-shape question.
+  - req_id: CNP01
+    status: partial
+    evidence:
+      - POST /api/v1/instance-operations/launch
+      - POST /api/v1/instance-operations/restart
+      - POST /api/v1/instance-operations/terminate
+      - GET /api/v1/instances
+      - GET /api/v1/instances/{id}
+      - GET /api/v1/firewall-rulesets
+      - GET /api/v1/tickets
+    notes: Node lifecycle (1) and manual maintenance via tickets (5) covered; no topology/inventory (3) and no users/roles/service-account endpoints (4).
+  - req_id: CNP02
+    status: absent
+    evidence: []
+    notes: Plain imperative REST; no declarative/desired-state resource model or Terraform provider surfaced by the spec.
+  - req_id: CNP03
+    status: absent
+    evidence: []
+    notes: No NVLink/domain concept anywhere in paths or schemas.
+  - req_id: CNP04
+    status: partial
+    evidence:
+      - schema:InstanceStatus
+    notes: 'booting/active/unhealthy/terminating/terminated/preempted - no explicit "provisioning" or "maintenance required"; no non-instance resource has states (no network resource exists at all).'
+  - req_id: CNP05
+    status: present
+    evidence:
+      - schema:RequestedTagEntry
+      - schema:TagEntry
+    notes: Launch request accepts tags and a cloud-init-style user_data field.
+  - req_id: CNP06
+    status: absent
+    evidence: []
+    notes: No console/serial-console endpoint.
+  - req_id: CNP07
+    status: not_applicable
+    evidence: []
+    notes: VM-per-node policy statement, not discoverable from API shape.
+  - req_id: CNP08
+    status: present
+    evidence:
+      - schema:Instance.id
+      - schema:Filesystem.id
+      - schema:FirewallRuleset.id
+    notes: All resources carry a stable opaque string id.
+  - req_id: CNP09
+    status: absent
+    evidence: []
+    notes: No firmware/attestation endpoint (VM-only API, no bare-metal access).
+  - req_id: CNP10
+    status: absent
+    evidence: []
+    notes: No BMC/Redfish surface at all.
+  - req_id: BOOT01
+    status: partial
+    evidence:
+      - GET /api/v1/images
+    notes: Read-only catalog of provider images; no node-pool concept (no k8s) to deploy them into.
+  - req_id: BOOT02
+    status: present
+    evidence:
+      - schema:Instance.private_ip
+    notes: Launch request body includes a user_data field for cloud-init; instance exposes ip/private_ip.
+  - req_id: BOOT03
+    status: partial
+    evidence:
+      - GET /api/v1/images
+    notes: Only GET exists for images - no create/delete of tenant custom images despite the requirement asking for full CRUD.
+  - req_id: BOOT04
+    status: present
+    evidence:
+      - schema:InstanceTypeSpecs.storage_gib
+    notes: Per-instance-type local storage size is a first-class field.
+  - req_id: SDN01
+    status: absent
+    evidence: []
+    notes: No network/VPC/subnet resource; firewall-rulesets are ACL objects, not an addressable virtual network.
+  - req_id: SDN02
+    status: partial
+    evidence:
+      - schema:FirewallRule
+      - GET /api/v1/firewall-rulesets
+    notes: CIDR allow rules scoped to instances/region exist; no subnet or K8s-service-level scoping (no subnet concept exists).
+  - req_id: SDN03
+    status: present
+    evidence:
+      - GET /api/v1/firewall-rulesets
+      - POST /api/v1/firewall-rulesets
+      - PATCH /api/v1/firewall-rulesets/{id}
+      - DELETE /api/v1/firewall-rulesets/{id}
+      - GET /api/v1/audit-events
+    notes: Full CRUD on rulesets, and audit-events double as the audit trail for those changes.
+  - req_id: SDN04
+    status: absent
+    evidence: []
+    notes: No BMC/out-of-band network concept to segment (no BMC surface at all).
+  - req_id: SDN05
+    status: absent
+    evidence: []
+    notes: Only a fixed public/private IP per instance; no floating IP resource.
+  - req_id: SDN06
+    status: absent
+    evidence: []
+    notes: No DNS configuration endpoint.
+  - req_id: SDN07
+    status: absent
+    evidence: []
+    notes: No VPC concept, so no peering.
+  - req_id: SDN08
+    status: not_applicable
+    evidence: []
+    notes: Physical storage-mesh network property; no distinct storage-host resource in the API to even ask this of.
+  - req_id: SDN09
+    status: partial
+    evidence:
+      - GET /api/v1/audit-events
+    notes: Config-change auditing covered; no hardware fault/latency telemetry endpoint.
+  - req_id: SDN10
+    status: absent
+    evidence: []
+    notes: No DNS endpoint.
+  - req_id: K8S01
+    status: absent
+    evidence: []
+    notes: No managed-Kubernetes surface anywhere in this API (applies to all K8S* requirements below).
+  - req_id: K8S02
+    status: absent
+    evidence: []
+    notes: No managed-Kubernetes surface.
+  - req_id: K8S03
+    status: absent
+    evidence: []
+    notes: No managed-Kubernetes surface.
+  - req_id: K8S04
+    status: absent
+    evidence: []
+    notes: No managed-Kubernetes surface.
+  - req_id: K8S05
+    status: absent
+    evidence: []
+    notes: No cluster/control-plane endpoints.
+  - req_id: K8S06
+    status: absent
+    evidence: []
+    notes: No node-pool endpoints.
+  - req_id: K8S07
+    status: absent
+    evidence: []
+    notes: No API server / cluster metrics endpoint.
+  - req_id: K8S08
+    status: absent
+    evidence: []
+    notes: No cluster control plane to version.
+  - req_id: K8S09
+    status: absent
+    evidence: []
+    notes: No cluster control plane to upgrade.
+  - req_id: K8S10
+    status: absent
+    evidence: []
+    notes: No node-pool endpoints.
+  - req_id: K8S11
+    status: absent
+    evidence: []
+    notes: No cluster control plane.
+  - req_id: K8S12
+    status: absent
+    evidence: []
+    notes: No cluster control plane.
+  - req_id: K8S14
+    status: absent
+    evidence: []
+    notes: No cluster control plane.
+  - req_id: K8S15
+    status: absent
+    evidence: []
+    notes: No cluster endpoint concept.
+  - req_id: K8S16
+    status: absent
+    evidence: []
+    notes: No Kubernetes Service Accounts / IAM integration surface.
+  - req_id: K8S17
+    status: absent
+    evidence: []
+    notes: No cluster OIDC issuer / JWKS surface.
+  - req_id: K8S19
+    status: absent
+    evidence: []
+    notes: No etcd/secrets to encrypt.
+  - req_id: K8S20
+    status: absent
+    evidence: []
+    notes: No control plane logs endpoint.
+  - req_id: K8S21
+    status: absent
+    evidence: []
+    notes: No cluster to install CRDs/admission controllers into.
+  - req_id: K8S22
+    status: absent
+    evidence: []
+    notes: No CNI-managed cluster.
+  - req_id: K8S23
+    status: absent
+    evidence: []
+    notes: No CSI driver / cluster surface.
+  - req_id: K8S24
+    status: absent
+    evidence: []
+    notes: No cluster feature-gate surface.
+  - req_id: K8S25
+    status: absent
+    evidence: []
+    notes: No operator/cluster surface.
+  - req_id: K8S26
+    status: absent
+    evidence: []
+    notes: No cluster resource at all.
+  - req_id: K8S27
+    status: absent
+    evidence: []
+    notes: No control plane sizing surface.
+  - req_id: K8S28
+    status: absent
+    evidence: []
+    notes: No cluster to benchmark.
+  - req_id: K8S29
+    status: absent
+    evidence: []
+    notes: No Kubernetes Service/LoadBalancer surface.
+  - req_id: K8S30
+    status: absent
+    evidence: []
+    notes: No cluster DNS surface.
+  - req_id: K8S31
+    status: absent
+    evidence: []
+    notes: No cluster CIDR configuration surface.
+  - req_id: SEC01
+    status: absent
+    evidence: []
+    notes: No OIDC/SAML federation config endpoint exposed by this API.
+  - req_id: SEC03
+    status: partial
+    evidence:
+      - schema:AuditEvent.request_api_key_lrn
+    notes: Audit events reference an "api_key" resource/actor concept, implying API-key auth exists, but no key-management path is present in this spec to confirm rotation/expiration support.
+  - req_id: SEC04
+    status: absent
+    evidence: []
+    notes: No roles/scopes/RBAC endpoints.
+  - req_id: SEC05
+    status: absent
+    evidence: []
+    notes: No LDAP integration endpoint.
+  - req_id: SEC06
+    status: absent
+    evidence: []
+    notes: No workload/service identity federation surface (no k8s either).
+  - req_id: SEC07
+    status: not_applicable
+    evidence: []
+    notes: MFA enforcement is a console/product property, not visible in an OpenAPI spec.
+  - req_id: SEC08
+    status: present
+    evidence:
+      - GET /api/v1/audit-events
+      - schema:AuditEvent
+    notes: Rich audit schema - actor, resource, action, result, client_ip, workspace_lrn, surface, timestamp. No explicit export-to-S3 mechanism visible though.
+  - req_id: SEC23
+    status: absent
+    evidence: []
+    notes: No SCIM endpoints.
+  - req_id: SEC24
+    status: absent
+    evidence: []
+    notes: No domain-based IdP routing config endpoint.
+  - req_id: SEC25
+    status: absent
+    evidence: []
+    notes: No organization-level policy endpoints.
+  - req_id: SEC26
+    status: absent
+    evidence: []
+    notes: No SSO enforcement toggle endpoint.
+  - req_id: SEC27
+    status: partial
+    evidence:
+      - GET /api/v1/ssh-keys
+      - POST /api/v1/ssh-keys
+      - schema:AuditEvent.workspace_lrn
+    notes: SSH-key CRUD exists and audit events reference a workspace_lrn (implying an account/workspace unit), but no isolation-unit/IAM-user/service-account CRUD endpoints exist.
+  - req_id: SEC09
+    status: absent
+    evidence: []
+    notes: No key/certificate lifecycle (issuance, rotation, revocation) endpoints - ssh-keys is simple key storage, not a KMS.
+  - req_id: SEC10
+    status: absent
+    evidence: []
+    notes: No managed-key usage endpoints.
+  - req_id: SEC11
+    status: partial
+    evidence:
+      - schema:AuditEvent.workspace_lrn
+      - schema:AuditEvent.resource_owner_lrn
+    notes: workspace_lrn/resource_owner_lrn imply an account/workspace hierarchy, but no explicit tenancy API to confirm hard isolation.
+  - req_id: SEC12
+    status: not_applicable
+    evidence: []
+    notes: No BMC/bare-metal surface exists to ask this question of.
+  - req_id: SEC13
+    status: not_applicable
+    evidence: []
+    notes: Transport-layer encryption is a platform property, not visible in API shape.
+  - req_id: SEC14
+    status: partial
+    evidence:
+      - schema:FirewallRuleset
+    notes: Firewall rulesets support default-deny-style posture, but nothing in the spec confirms the platform's own management API endpoints are private-link restricted.
+  - req_id: SEC15
+    status: present
+    evidence:
+      - schema:FirewallRule
+    notes: protocol/port_range/source_network is exactly a 5-tuple-style rule.
+  - req_id: SEC16
+    status: not_applicable
+    evidence: []
+    notes: Asks for a prose description of enforcement tech, not an API-shape question.
+  - req_id: SEC17
+    status: absent
+    evidence: []
+    notes: No GeoIP/threat-feed subscription endpoint.
+  - req_id: SEC18
+    status: not_applicable
+    evidence: []
+    notes: Physical inter-datacenter link protection, not visible in an API spec.
+  - req_id: SEC19
+    status: not_applicable
+    evidence: []
+    notes: Compliance attestation (SOC2), not an API-shape question.
+  - req_id: SEC20
+    status: not_applicable
+    evidence: []
+    notes: Hardware-level at-rest encryption (SED), not visible in API shape.
+  - req_id: SEC21
+    status: absent
+    evidence: []
+    notes: No sanitization/attestation endpoint (no bare-metal surface).
+  - req_id: SEC22
+    status: not_applicable
+    evidence: []
+    notes: Hardware root-of-trust/secure boot, not visible in a VM-level API.
+  - req_id: BFX01
+    status: absent
+    evidence:
+      - POST /api/v1/instance-operations/restart
+    notes: Restart covers "reset a VM instance"; no cordon/drain/host-replacement-request primitives, and no GPU reset endpoint.
+  - req_id: BFX02
+    status: absent
+    evidence: []
+    notes: 'Generic support tickets exist (GET/POST /api/v1/tickets) but carry none of the required structured fields (hardware stable ID, category, node handover date, provider account ID).'
+  - req_id: BFX03
+    status: absent
+    evidence: []
+    notes: No hardware-inventory/serial-number/firmware-version endpoint.
+  - req_id: DIR01
+    status: absent
+    evidence:
+      - schema:Filesystem
+    notes: Filesystem schema has no quota/uid/gid fields at all.
+  - req_id: DIR02
+    status: absent
+    evidence: []
+    notes: Filesystem schema doesn't state a protocol (NFSv4) or POSIX ACL model.
+  - req_id: DIR03
+    status: absent
+    evidence:
+      - schema:Filesystem
+    notes: No snapshot/restore fields or endpoints.
+  - req_id: DIR04
+    status: absent
+    evidence: []
+    notes: No LDAP integration surface.
+  - req_id: HSS01
+    status: partial
+    evidence:
+      - POST /api/v1/filesystems
+      - DELETE /api/v1/filesystems/{id}
+    notes: Basic create/delete provisioning exists; no capacity/throughput parameters at creation time.
+  - req_id: HSS02
+    status: not_applicable
+    evidence: []
+    notes: Throughput/IOPS SLA, not visible in API shape.
+  - req_id: HSS03
+    status: absent
+    evidence: []
+    notes: No CSI/k8s surface, no breakfix-API linkage for storage issues.
+  - req_id: HSS04
+    status: absent
+    evidence:
+      - schema:Filesystem
+    notes: No quota fields anywhere on Filesystem.
+  - req_id: HSS05
+    status: not_applicable
+    evidence: []
+    notes: Maintenance-scheduling policy, not visible in API shape.
+  - req_id: HSS06
+    status: not_applicable
+    evidence: []
+    notes: RDMA memory-protection is a wire-protocol property, not visible in a REST API spec.
+  - req_id: HSS07
+    status: not_applicable
+    evidence: []
+    notes: Filesystem architecture/scale property, not confirmable from API shape.
+  - req_id: HSS08
+    status: not_applicable
+    evidence: []
+    notes: Max filesystem size, not visible in API shape (no size-limit field or parameter).
+  - req_id: HSS09
+    status: present
+    evidence:
+      - GET /api/v1/file-systems
+      - POST /api/v1/filesystems
+    notes: Multiple named filesystems can be created independently.
+  - req_id: HSS10
+    status: not_applicable
+    evidence: []
+    notes: Live-expansion performance property, not visible in API shape (also no resize endpoint at all - see BOOT03-style gap).
+  - req_id: HSS11
+    status: not_applicable
+    evidence: []
+    notes: Client packaging/kernel-compat property, not an API-shape question.
+  - req_id: HSS12
+    status: absent
+    evidence:
+      - schema:Filesystem
+    notes: No quota fields.
+  - req_id: HSS13
+    status: absent
+    evidence: []
+    notes: No root-squash field or toggle.
+  - req_id: HSS14
+    status: not_applicable
+    evidence: []
+    notes: Mount-option support, not visible in a management-plane API spec.
+  - req_id: HSS15
+    status: partial
+    evidence:
+      - GET /api/v1/audit-events
+    notes: Account-level audit-events would capture filesystem create/delete, but no per-file changelog exists.
+  - req_id: HSS16
+    status: not_applicable
+    evidence: []
+    notes: Backend HA architecture, not visible in API shape.
+  - req_id: HSS17
+    status: not_applicable
+    evidence: []
+    notes: Client cache-coherency latency, not visible in API shape.
+  - req_id: HSS18
+    status: not_applicable
+    evidence: []
+    notes: Client multipathing, not visible in API shape.
+  - req_id: HSS19
+    status: absent
+    evidence: []
+    notes: No LDAP integration surface.
+  - req_id: DMS01
+    status: absent
+    evidence: []
+    notes: No managed-Kubernetes surface to stand up a data-mover cluster on.
+  - req_id: DMS02
+    status: not_applicable
+    evidence: []
+    notes: Dedicated node-count/networking commitment, not an API-shape question (generic CPU instance types exist via GET /api/v1/instance-types, but "dedicated data-mover nodes" isn't a distinct concept).
+  - req_id: DMS03
+    status: present
+    evidence:
+      - schema:RequestedFilesystemMountEntry
+    notes: Any instance can mount the same named filesystem via file_system_mounts at launch.
+  - req_id: DMS04
+    status: not_applicable
+    evidence: []
+    notes: Physical/network link to NVIDIA corp net, not an API-shape question.
+  - req_id: DMS05
+    status: absent
+    evidence: []
+    notes: No stable egress/NAT IP allocation concept (only per-instance public IP).
+  - req_id: STG01
+    status: absent
+    evidence: []
+    notes: No bare-metal storage-host provisioning surface at all (this API provisions VM instances and filesystems, not storage servers).
+  - req_id: STG02
+    status: absent
+    evidence: []
+    notes: No sanitization endpoint (no bare-metal surface).
+  - req_id: STG03
+    status: not_applicable
+    evidence: []
+    notes: No storage-host resource to assign a stable IP to (n/a rather than absent - the resource itself doesn't exist).
+  - req_id: STG04
+    status: absent
+    evidence: []
+    notes: No out-of-band failure-detection endpoint.
+  - req_id: STG05
+    status: absent
+    evidence: []
+    notes: No failure-domain/topology endpoint.
+  - req_id: STG06
+    status: not_applicable
+    evidence: []
+    notes: BlueField/DPU-specific hardware, no bare-metal surface to ask this of.
+  - req_id: NET01
+    status: absent
+    evidence: []
+    notes: No backend switch fabric / topology endpoint.
+  - req_id: NET02
+    status: absent
+    evidence: []
+    notes: No NVLink domain field anywhere.
+  - req_id: NET03
+    status: absent
+    evidence: []
+    notes: No BYOIP/static-IP-allocation/routing surface; only a fixed public/private IP per instance.
+  - req_id: NET04
+    status: not_applicable
+    evidence: []
+    notes: Physical interconnect provisioning (Direct-Connect-equivalent), not an API-shape question.
+  - req_id: NET05
+    status: not_applicable
+    evidence: []
+    notes: Physical interconnect to DGXC storage, not an API-shape question.
+  - req_id: NET06
+    status: absent
+    evidence: []
+    notes: No dedicated egress-NAT-pool concept (only per-instance public IP).
+  - req_id: CAP01
+    status: absent
+    evidence: []
+    notes: No fleet-governance-metrics endpoint.
+  - req_id: CAP02
+    status: partial
+    evidence:
+      - schema:Instance.id
+      - schema:InstanceStatus
+      - schema:Instance
+    notes: Instance has id/status/instance_type/region, covering a few of the required fields, but no account/project/sub-account breakdown or explicit "in use" flag.
+  - req_id: CAP03
+    status: absent
+    evidence: []
+    notes: No resource-discovery/new-capacity feed endpoint - only a snapshot list of currently owned instances.
+  - req_id: CAP04
+    status: absent
+    evidence: []
+    notes: No capacity-reservation/topology-block endpoint.
+  - req_id: CAP05
+    status: partial
+    evidence:
+      - schema:InstanceStatus
+    notes: Per-instance health via InstanceStatus exists; no cluster/nodegroup/reservation-level health aggregation.
