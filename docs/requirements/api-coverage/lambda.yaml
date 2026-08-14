@@ -26,6 +26,8 @@ spec: specs/lambda-cloud-openapi.json
 spec_source: https://cloud.lambdalabs.com/api/v1/openapi.json
 spec_title: Lambda Cloud API 1.10.0
 fetched: '2026-08-14'
+caveats:
+  - 'Lambda offers a separate Managed Kubernetes product ("1-Click Clusters" / Superclusters, see https://lambda.ai/kubernetes and https://docs.lambda.ai/public-cloud/1-click-clusters/) that is NOT covered by this analysis. Per Lambda''s docs, it is reserved/provisioned only through the web console with no documented REST/CLI/Terraform path, so it has no footprint in the api/v1 spec vendored here. Every K8S* status below reflects "not present in api/v1", not "Lambda has no Kubernetes offering" - see the K8S01 note.'
 mappings:
   - req_id: BM01
     status: not_applicable
@@ -88,7 +90,7 @@ mappings:
     status: partial
     evidence:
       - GET /api/v1/images
-    notes: Read-only catalog of provider images; no node-pool concept (no k8s) to deploy them into.
+    notes: Read-only catalog of provider images; no node-pool concept in api/v1 to deploy them into (MK8s, which does have node pools, is console-provisioned only - see K8S01).
   - req_id: BOOT02
     status: present
     evidence:
@@ -155,19 +157,19 @@ mappings:
   - req_id: K8S01
     status: absent
     evidence: []
-    notes: No managed-Kubernetes surface anywhere in this API (applies to all K8S* requirements below).
+    notes: 'Lambda DOES offer managed Kubernetes as a product ("1-Click Clusters" / Superclusters, docs.lambda.ai/public-cloud/1-click-clusters) - but per Lambda''s own docs it is reserved/provisioned only through the web console, with no REST/CLI/Terraform path documented. It therefore has zero surface in the api/v1 spec analyzed here, and every K8S* requirement below is judged against that spec, not against the product''s existence. Applies to all K8S* requirements below.'
   - req_id: K8S02
     status: absent
     evidence: []
-    notes: No managed-Kubernetes surface.
+    notes: No surface in api/v1 (see K8S01 - MK8s exists as a product, provisioned console-only).
   - req_id: K8S03
     status: absent
     evidence: []
-    notes: No managed-Kubernetes surface.
+    notes: No surface in api/v1 (see K8S01).
   - req_id: K8S04
     status: absent
     evidence: []
-    notes: No managed-Kubernetes surface.
+    notes: No surface in api/v1 (see K8S01).
   - req_id: K8S05
     status: absent
     evidence: []
@@ -288,7 +290,7 @@ mappings:
   - req_id: SEC06
     status: absent
     evidence: []
-    notes: No workload/service identity federation surface (no k8s either).
+    notes: No workload/service identity federation surface in api/v1 (MK8s Service Accounts, if any, are outside this API - see K8S01).
   - req_id: SEC07
     status: not_applicable
     evidence: []
@@ -499,7 +501,7 @@ mappings:
   - req_id: DMS01
     status: absent
     evidence: []
-    notes: No managed-Kubernetes surface to stand up a data-mover cluster on.
+    notes: No API surface (see K8S01) to stand up a data-mover cluster via api/v1; MK8s is console-provisioned only per Lambda's docs.
   - req_id: DMS02
     status: not_applicable
     evidence: []

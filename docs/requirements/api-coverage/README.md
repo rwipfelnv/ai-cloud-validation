@@ -16,6 +16,15 @@ doesn't mean the feature works correctly, only that the provider built
 follow-up test," and `absent` as "worth a direct question to the provider" -
 per Brad's framing, a real absence here is informative in itself.
 
+**Important pitfall:** `absent` means "not in the spec we vendored" - it does
+*not* mean "the provider has no such capability." Providers with more than one
+product line (a compute API plus a separately-provisioned managed-Kubernetes
+offering, for instance) may expose that other product through the console
+only, a different API, or no API at all - in which case it's invisible here
+even though the product exists. See `caveats:` in `<provider>.yaml` for
+known cases and confirm with the provider's own docs/sales team before citing
+an `absent` result as "provider X doesn't support Y."
+
 ## Files
 
 | File | Role |
