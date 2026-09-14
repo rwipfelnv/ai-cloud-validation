@@ -25,24 +25,41 @@ even though the product exists. See `caveats:` in `<provider>.yaml` for
 known cases and confirm with the provider's own docs/sales team before citing
 an `absent` result as "provider X doesn't support Y."
 
+**Related pitfall, seen in the Mistral mapping:** a spec can define schemas
+that are never referenced by any path operation ("orphaned" - not reachable
+via `$ref` from `paths`). Only cite reachable schemas/operations as evidence;
+an orphaned schema suggests the capability exists or is coming, but isn't
+something this analysis can credit as `present`. Also: when handed more than
+one spec for the same provider (an internal export vs. a narrower/older one),
+don't assume either is fully authoritative - note the discrepancy in
+`caveats:` and flag it for confirmation rather than silently picking one.
+
 ## Files
 
 | File | Role |
 | ---- | ---- |
 | `<provider>.yaml` | Curated mapping: per offtake `req_id`, a `status` (`present`/`partial`/`absent`/`not_applicable`) with `evidence` pointing into the vendored spec. The judgment call is made by a human/AI reading the spec; this is the actual analysis artifact. |
-| `specs/<provider>-openapi.json` | Vendored snapshot of the provider's OpenAPI spec, fetched at the date recorded in the mapping's `fetched` field. Re-fetch and re-review periodically - the mapping doesn't auto-update. |
+| `specs/<provider>-openapi.{json,yaml}` | Vendored snapshot of the provider's OpenAPI spec (either format is supported), fetched/supplied at the date recorded in the mapping's `fetched` field. Re-fetch and re-review periodically - the mapping doesn't auto-update. |
 | `../../scripts/api_coverage_report.py` | `validate` (every requirement mapped once, every evidence reference resolves in the spec) and `report` (per-section coverage table + score). |
+
+Providers analyzed so far: `lambda` (Lambda Cloud, self-serve public spec,
+16% checkable-requirement coverage - VM rental only, no managed-K8s API
+surface) and `mistral` (Mistral Compute, spec supplied directly since it's
+sales-gated with no public URL, 44% coverage - genuinely Kubernetes-as-a-
+Service, with a notably strong RBAC/IAM and breakfix surface).
 
 ## Usage
 
 ```bash
 uv run python scripts/api_coverage_report.py validate --provider lambda
-uv run python scripts/api_coverage_report.py report --provider lambda
+uv run python scripts/api_coverage_report.py report --provider mistral
 ```
 
 ## Adding a provider
 
-1. Fetch and commit the OpenAPI spec to `specs/<provider>-openapi.json`.
+1. Find or obtain the OpenAPI spec (a public URL, or supplied directly if the
+   product is sales-gated/has no self-serve docs - record how in
+   `spec_source:`) and commit it to `specs/<provider>-openapi.{json,yaml}`.
 2. Read `../offtake-requirements.yaml` requirement by requirement against the
    spec's paths and `components.schemas`, and write `<provider>.yaml` with one
    entry per `req_id`. Use `not_applicable` for anything that isn't a

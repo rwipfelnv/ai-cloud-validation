@@ -15,8 +15,8 @@
 
 """Tests for api_coverage_report.py.
 
-Acts as the CI drift guard: the committed Lambda coverage mapping must stay
-consistent with both the offtake requirements catalog and the vendored spec.
+Acts as the CI drift guard: each committed provider coverage mapping must stay
+consistent with both the offtake requirements catalog and its vendored spec.
 """
 
 from __future__ import annotations
@@ -24,22 +24,28 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 _SCRIPT = Path(__file__).resolve().parent.parent / "api_coverage_report.py"
 _spec = importlib.util.spec_from_file_location("api_coverage_report", _SCRIPT)
 assert _spec and _spec.loader
 api_coverage_report = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(api_coverage_report)
 
-
-def test_committed_lambda_mapping_is_consistent() -> None:
-    """`validate --provider lambda` must pass against the committed files (no drift)."""
-    assert api_coverage_report.validate("lambda") == 0
+PROVIDERS = ["lambda", "mistral"]
 
 
-def test_lambda_mapping_covers_every_offtake_requirement() -> None:
-    """Every offtake req_id must have exactly one Lambda coverage entry (no silent gaps)."""
+@pytest.mark.parametrize("provider", PROVIDERS)
+def test_committed_mapping_is_consistent(provider: str) -> None:
+    """`validate --provider <provider>` must pass against the committed files (no drift)."""
+    assert api_coverage_report.validate(provider) == 0
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+def test_mapping_covers_every_offtake_requirement(provider: str) -> None:
+    """Every offtake req_id must have exactly one coverage entry per provider (no silent gaps)."""
     reqs = api_coverage_report.load_offtake_requirements()
-    coverage = api_coverage_report.load_coverage("lambda")
+    coverage = api_coverage_report.load_coverage(provider)
     mapped = [m["req_id"] for m in coverage["mappings"]]
     assert set(mapped) == set(reqs)
     assert len(mapped) == len(set(mapped))
@@ -47,8 +53,6 @@ def test_lambda_mapping_covers_every_offtake_requirement() -> None:
 
 def test_unknown_provider_raises() -> None:
     """A provider with no mapping file is a clear error, not a silent empty report."""
-    import pytest
-
     with pytest.raises(SystemExit):
         api_coverage_report.load_coverage("does-not-exist")
 

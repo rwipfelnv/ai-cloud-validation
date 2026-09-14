@@ -90,10 +90,12 @@ def load_coverage(provider: str) -> dict[str, Any]:
 
 
 def load_spec(coverage: dict[str, Any], provider: str) -> dict[str, Any]:
-    """Load the vendored OpenAPI spec referenced by a coverage mapping."""
+    """Load the vendored OpenAPI spec referenced by a coverage mapping (JSON or YAML)."""
     spec_path = COVERAGE_DIR / coverage["spec"]
     if not spec_path.exists():
         raise SystemExit(f"spec file for provider '{provider}' not found: {spec_path}")
+    if spec_path.suffix in (".yaml", ".yml"):
+        return _load_yaml(spec_path)
     return _load_json(spec_path)
 
 

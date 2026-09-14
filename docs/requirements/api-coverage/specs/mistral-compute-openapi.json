@@ -1,0 +1,2880 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Compute API",
+    "description": "REST API for Managed Kubernetes Service",
+    "version": "0.2.0"
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v1/organization": {
+      "get": {
+        "operationId": "getOrganization",
+        "summary": "Get the current organization",
+        "responses": {
+          "200": {
+            "description": "Organization details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateOrganization",
+        "summary": "Update organization settings",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Organization updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/organization/members": {
+      "get": {
+        "operationId": "listMembers",
+        "summary": "List organization members",
+        "responses": {
+          "200": {
+            "description": "List of members",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Member"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "inviteMember",
+        "summary": "Invite a member to the organization",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberInvite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Member invited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Member"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Member already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/organization/members/{userId}": {
+      "parameters": [
+        {
+          "name": "userId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "put": {
+        "operationId": "updateMember",
+        "summary": "Update a member's role",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Member updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Member"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Member not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeMember",
+        "summary": "Remove a member from the organization",
+        "responses": {
+          "204": {
+            "description": "Member removed"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Member not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/regions": {
+      "get": {
+        "operationId": "listRegions",
+        "summary": "List regions available to the organization",
+        "responses": {
+          "200": {
+            "description": "List of regions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Region"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/clusters": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RegionQuery"
+        }
+      ],
+      "get": {
+        "operationId": "listClusters",
+        "summary": "List all clusters in a region",
+        "responses": {
+          "200": {
+            "description": "List of clusters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Cluster"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createCluster",
+        "summary": "Create a new cluster",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClusterCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Cluster created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cluster"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Quota exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Cluster already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/clusters/{clusterName}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RegionQuery"
+        },
+        {
+          "name": "clusterName",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getCluster",
+        "summary": "Get a cluster by name",
+        "responses": {
+          "200": {
+            "description": "Cluster details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cluster"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cluster not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateCluster",
+        "summary": "Update a cluster",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClusterUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cluster updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cluster"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cluster not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCluster",
+        "summary": "Delete a cluster",
+        "responses": {
+          "204": {
+            "description": "Cluster deleted"
+          },
+          "404": {
+            "description": "Cluster not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/clusters/{clusterName}/kubeconfig": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RegionQuery"
+        },
+        {
+          "name": "clusterName",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getClusterKubeconfig",
+        "summary": "Get kubeconfig for a cluster",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/KubeconfigType"
+            },
+            "description": "Type of kubeconfig: admin (static credentials) or oidc (kubelogin exec plugin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cluster kubeconfig",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClusterKubeconfig"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions (admin kubeconfig requires admin role)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cluster not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/clusters/{clusterName}/nodepools": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RegionQuery"
+        },
+        {
+          "name": "clusterName",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "listNodePools",
+        "summary": "List node pools for a cluster",
+        "responses": {
+          "200": {
+            "description": "List of node pools",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NodePool"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createNodePool",
+        "summary": "Create a new node pool",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NodePoolCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Node pool created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodePool"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Node pool already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/clusters/{clusterName}/nodepools/{nodepoolName}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RegionQuery"
+        },
+        {
+          "name": "clusterName",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "nodepoolName",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getNodePool",
+        "summary": "Get a node pool by name",
+        "responses": {
+          "200": {
+            "description": "Node pool details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodePool"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Node pool not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateNodePool",
+        "summary": "Update a node pool",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NodePoolUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Node pool updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodePool"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Node pool not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteNodePool",
+        "summary": "Delete a node pool",
+        "responses": {
+          "204": {
+            "description": "Node pool deleted"
+          },
+          "404": {
+            "description": "Node pool not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/clusters/{clusterName}/storage": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RegionQuery"
+        },
+        {
+          "name": "clusterName",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "listStorage",
+        "summary": "List storage resources for a cluster",
+        "responses": {
+          "200": {
+            "description": "List of storage resources",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Storage"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/clusters/{clusterName}/storage/{storageName}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RegionQuery"
+        },
+        {
+          "name": "clusterName",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "storageName",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getStorage",
+        "summary": "Get a storage resource by name",
+        "responses": {
+          "200": {
+            "description": "Storage details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Storage"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Storage not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateStorage",
+        "summary": "Update a storage resource (quota only)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Storage updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Storage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Storage not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/nodes": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RegionQuery"
+        }
+      ],
+      "get": {
+        "operationId": "listNodes",
+        "summary": "List bare metal nodes in a region",
+        "responses": {
+          "200": {
+            "description": "List of nodes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Node"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/nodes/{nodeName}/reboot": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RegionQuery"
+        },
+        {
+          "name": "nodeName",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "rebootNode",
+        "summary": "Reboot a bare metal node",
+        "responses": {
+          "204": {
+            "description": "Reboot initiated"
+          },
+          "404": {
+            "description": "Node not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ssh-keys": {
+      "get": {
+        "operationId": "listSSHKeys",
+        "summary": "List user's SSH keys",
+        "responses": {
+          "200": {
+            "description": "List of SSH keys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SSHKey"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createSSHKey",
+        "summary": "Add an SSH key",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SSHKeyCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "SSH key created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SSHKey"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid SSH key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SSH key already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ssh-keys/{keyId}": {
+      "parameters": [
+        {
+          "name": "keyId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "delete": {
+        "operationId": "deleteSSHKey",
+        "summary": "Remove an SSH key",
+        "responses": {
+          "204": {
+            "description": "SSH key deleted"
+          },
+          "404": {
+            "description": "SSH key not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ssh-keys/import-github": {
+      "post": {
+        "operationId": "importGitHubSSHKeys",
+        "summary": "Import SSH keys from GitHub",
+        "responses": {
+          "200": {
+            "description": "Import result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitHubImportResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No GitHub identity linked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "GitHub API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/quotas": {
+      "get": {
+        "operationId": "listQuotas",
+        "summary": "List resource quotas and current usage for all regions",
+        "responses": {
+          "200": {
+            "description": "List of quotas per region",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Quota"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhook-tokens": {
+      "get": {
+        "operationId": "listWebhookTokens",
+        "summary": "List webhook tokens for the current organization",
+        "responses": {
+          "200": {
+            "description": "List of webhook tokens",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookToken"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createWebhookToken",
+        "summary": "Create a webhook token for pushing GPU health events",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookTokenCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Webhook token created. The token value is only returned once.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookTokenCreated"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhook-tokens/{tokenId}": {
+      "parameters": [
+        {
+          "name": "tokenId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "delete": {
+        "operationId": "deleteWebhookToken",
+        "summary": "Delete a webhook token",
+        "responses": {
+          "204": {
+            "description": "Token deleted"
+          },
+          "404": {
+            "description": "Token not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/notification-channels": {
+      "get": {
+        "operationId": "listNotificationChannels",
+        "summary": "List notification channels for the current organization",
+        "responses": {
+          "200": {
+            "description": "List of notification channels",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationChannel"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createNotificationChannel",
+        "summary": "Create a notification channel for the current organization",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationChannelCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Notification channel created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationChannel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid notification channel request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/notification-channels/{channelId}": {
+      "parameters": [
+        {
+          "name": "channelId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "put": {
+        "operationId": "updateNotificationChannel",
+        "summary": "Update a notification channel",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationChannelUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notification channel updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationChannel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid notification channel request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Channel not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteNotificationChannel",
+        "summary": "Delete a notification channel",
+        "responses": {
+          "204": {
+            "description": "Channel deleted"
+          },
+          "404": {
+            "description": "Channel not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/node-events": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RegionQuery"
+        }
+      ],
+      "get": {
+        "operationId": "listNodeEvents",
+        "summary": "List GPU health events for nodes in a region",
+        "parameters": [
+          {
+            "name": "nodeName",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fatal",
+                "degraded",
+                "healthy"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "Cursor for pagination (ISO 8601 timestamp). Returns events generated before this time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of node health events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeHealthEventList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/node-events/{eventId}": {
+      "parameters": [
+        {
+          "name": "eventId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "delete": {
+        "operationId": "deleteNodeEvent",
+        "summary": "Delete a node health event",
+        "responses": {
+          "204": {
+            "description": "Event deleted"
+          },
+          "404": {
+            "description": "Event not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/audit-logs": {
+      "get": {
+        "operationId": "listAuditLogs",
+        "summary": "List audit log events for the current organization",
+        "parameters": [
+          {
+            "name": "resourceType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/AuditResourceType"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "create",
+                "update",
+                "delete",
+                "reboot",
+                "import"
+              ]
+            }
+          },
+          {
+            "name": "actor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "Cursor for pagination (ISO 8601 timestamp). Returns events created before this time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of audit events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditEventList"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "RegionQuery": {
+        "name": "region",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+        }
+      }
+    },
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "OAuth2 access token from Ory Network"
+      }
+    },
+    "schemas": {
+      "Organization": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Virtual tenant name used to build service URLs (e.g. Grafana)."
+          },
+          "autoJoin": {
+            "type": "boolean",
+            "description": "When true, users who authenticate via SSO are automatically added as members."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "autoJoin",
+          "createdAt"
+        ]
+      },
+      "OrganizationUpdate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "autoJoin": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Member": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "member",
+              "viewer"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "role",
+          "createdAt"
+        ]
+      },
+      "MemberInvite": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Ory subject ID of the user to invite."
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "member",
+              "viewer"
+            ]
+          }
+        },
+        "required": [
+          "userId",
+          "role"
+        ]
+      },
+      "MemberUpdate": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "member",
+              "viewer"
+            ]
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "Region": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "maintenance",
+              "disabled"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "displayName",
+          "status"
+        ]
+      },
+      "ClusterCreate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
+            "minLength": 1,
+            "maxLength": 63
+          },
+          "kubeVersion": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+          },
+          "cluster": {
+            "$ref": "#/components/schemas/ClusterConfig"
+          }
+        },
+        "required": [
+          "name",
+          "cluster"
+        ]
+      },
+      "ClusterUpdate": {
+        "type": "object",
+        "properties": {
+          "kubeVersion": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+          },
+          "cluster": {
+            "$ref": "#/components/schemas/ClusterConfigUpdate"
+          }
+        }
+      },
+      "Cluster": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "kubeVersion": {
+            "type": "string"
+          },
+          "cluster": {
+            "$ref": "#/components/schemas/ClusterConfig"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ClusterStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "name",
+          "region",
+          "kubeVersion",
+          "cluster",
+          "status",
+          "createdAt"
+        ]
+      },
+      "ClusterStatus": {
+        "type": "object",
+        "properties": {
+          "clusterState": {
+            "type": "string",
+            "enum": [
+              "Pending",
+              "Provisioning",
+              "Ready",
+              "Upgrading",
+              "Degraded",
+              "Failed",
+              "Deleting"
+            ]
+          },
+          "controlPlaneEndpoint": {
+            "$ref": "#/components/schemas/ControlPlaneEndpoint"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            }
+          }
+        }
+      },
+      "ClusterConfig": {
+        "type": "object",
+        "properties": {
+          "podCIDR": {
+            "type": "string"
+          },
+          "serviceCIDR": {
+            "type": "string"
+          },
+          "plugins": {
+            "$ref": "#/components/schemas/PluginsConfig"
+          }
+        }
+      },
+      "ClusterConfigUpdate": {
+        "type": "object",
+        "properties": {
+          "plugins": {
+            "$ref": "#/components/schemas/PluginsConfig"
+          }
+        }
+      },
+      "PluginsConfig": {
+        "type": "object",
+        "properties": {
+          "cni": {
+            "type": "string",
+            "enum": [
+              "cilium"
+            ]
+          },
+          "monitoring": {
+            "type": "string",
+            "enum": [
+              "enabled"
+            ]
+          },
+          "gitops": {
+            "type": "string",
+            "enum": [
+              "argocd"
+            ]
+          },
+          "tailscale": {
+            "$ref": "#/components/schemas/TailscaleConfig"
+          },
+          "nvidia": {
+            "$ref": "#/components/schemas/NvidiaConfig"
+          },
+          "slurm": {
+            "$ref": "#/components/schemas/SlurmConfig"
+          }
+        }
+      },
+      "SlurmConfig": {
+        "type": "object",
+        "properties": {
+          "slinky": {
+            "type": "boolean",
+            "description": "Slinky Slurm on Kubernetes integration"
+          },
+          "hpcOperator": {
+            "type": "boolean",
+            "description": "Mistral HPC Operator for managed Slurm clusters with pre-configured storage, per-user login nodes, and active health checks"
+          }
+        }
+      },
+      "NvidiaConfig": {
+        "type": "object",
+        "properties": {
+          "draDriver": {
+            "type": "boolean"
+          },
+          "gpuOperator": {
+            "type": "boolean"
+          },
+          "nvsentinel": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TailscaleConfig": {
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": "string"
+          },
+          "clientSecret": {
+            "type": "string"
+          },
+          "tag": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          }
+        }
+      },
+      "ControlPlaneEndpoint": {
+        "type": "object",
+        "properties": {
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "host",
+          "port"
+        ]
+      },
+      "Condition": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "True",
+              "False",
+              "Unknown"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "lastTransitionTime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "type",
+          "status"
+        ]
+      },
+      "NodePoolCreate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
+            "minLength": 1,
+            "maxLength": 63
+          },
+          "replicas": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "image": {
+            "$ref": "#/components/schemas/ImageSpec"
+          },
+          "kubeVersion": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "hostSelector": {
+            "$ref": "#/components/schemas/HostSelector"
+          },
+          "taints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaintSpec"
+            }
+          },
+          "healthCheck": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HealthCheckRule"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "replicas",
+          "kubeVersion"
+        ]
+      },
+      "NodePoolUpdate": {
+        "type": "object",
+        "properties": {
+          "replicas": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "image": {
+            "$ref": "#/components/schemas/ImageSpec"
+          },
+          "kubeVersion": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "taints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaintSpec"
+            }
+          },
+          "healthCheck": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HealthCheckRule"
+            }
+          }
+        }
+      },
+      "NodePool": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "clusterName": {
+            "type": "string"
+          },
+          "replicas": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "image": {
+            "$ref": "#/components/schemas/ImageSpec"
+          },
+          "kubeVersion": {
+            "type": "string"
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "hostSelector": {
+            "$ref": "#/components/schemas/HostSelector"
+          },
+          "taints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaintSpec"
+            }
+          },
+          "healthCheck": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HealthCheckRule"
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/NodePoolStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "name",
+          "clusterName",
+          "replicas",
+          "image",
+          "kubeVersion",
+          "hostSelector",
+          "status",
+          "createdAt"
+        ]
+      },
+      "NodePoolStatus": {
+        "type": "object",
+        "properties": {
+          "phase": {
+            "type": "string",
+            "enum": [
+              "Pending",
+              "WaitingForCluster",
+              "Provisioning",
+              "Ready",
+              "Updating",
+              "Scaling",
+              "Deleting",
+              "Failed"
+            ]
+          },
+          "desiredReplicas": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "currentReplicas": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "readyReplicas": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unhealthyMachines": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ImageSpec": {
+        "type": "object",
+        "properties": {
+          "os": {
+            "type": "string"
+          },
+          "osVersion": {
+            "type": "string"
+          },
+          "arch": {
+            "type": "string",
+            "enum": [
+              "amd64",
+              "arm64"
+            ]
+          }
+        }
+      },
+      "TaintSpec": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": {
+            "type": "string"
+          },
+          "effect": {
+            "type": "string",
+            "enum": [
+              "NoSchedule",
+              "PreferNoSchedule",
+              "NoExecute"
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "effect"
+        ]
+      },
+      "HealthCheckRule": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "True",
+              "False",
+              "Unknown"
+            ]
+          },
+          "timeout": {
+            "type": "string",
+            "description": "Duration string (e.g. 5m, 1h)"
+          }
+        },
+        "required": [
+          "type",
+          "status",
+          "timeout"
+        ]
+      },
+      "HostSelector": {
+        "type": "object",
+        "properties": {
+          "matchLabels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "matchLabels"
+        ]
+      },
+      "ClusterKubeconfig": {
+        "type": "object",
+        "properties": {
+          "kubeconfig": {
+            "type": "string",
+            "format": "byte",
+            "description": "Base64-encoded kubeconfig"
+          }
+        },
+        "required": [
+          "kubeconfig"
+        ]
+      },
+      "SSHKey": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "publicKey": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "publicKey",
+          "createdAt"
+        ]
+      },
+      "SSHKeyCreate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "publicKey": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "name",
+          "publicKey"
+        ]
+      },
+      "GitHubImportResult": {
+        "type": "object",
+        "properties": {
+          "imported": {
+            "type": "integer"
+          },
+          "skipped": {
+            "type": "integer"
+          },
+          "keys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SSHKey"
+            }
+          }
+        },
+        "required": [
+          "imported",
+          "skipped",
+          "keys"
+        ]
+      },
+      "Node": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "poweredOn": {
+            "type": "boolean"
+          },
+          "online": {
+            "type": "boolean"
+          },
+          "clusterName": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "deviceType": {
+            "type": "string"
+          },
+          "site": {
+            "type": "string"
+          },
+          "pod": {
+            "type": "string"
+          },
+          "rack": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "name",
+          "state",
+          "poweredOn",
+          "online",
+          "createdAt"
+        ]
+      },
+      "KubeconfigType": {
+        "type": "string",
+        "enum": [
+          "admin",
+          "oidc"
+        ],
+        "default": "admin"
+      },
+      "AuditResourceType": {
+        "type": "string",
+        "enum": [
+          "cluster",
+          "nodepool",
+          "sshkey",
+          "node",
+          "storage",
+          "member",
+          "organization",
+          "webhook_token",
+          "notification_channel",
+          "node_event"
+        ]
+      },
+      "AuditEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "actor": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "create",
+              "update",
+              "delete",
+              "reboot",
+              "import"
+            ]
+          },
+          "resourceType": {
+            "$ref": "#/components/schemas/AuditResourceType"
+          },
+          "resourceName": {
+            "type": "string"
+          },
+          "changes": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true,
+            "description": "For update operations, contains changed fields with old and new values."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "success",
+              "failure"
+            ]
+          },
+          "errorMessage": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "actor",
+          "action",
+          "resourceType",
+          "resourceName",
+          "status",
+          "createdAt"
+        ]
+      },
+      "AuditEventList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEvent"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Timestamp cursor for the next page. Null if no more results."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "StorageProvider": {
+        "type": "string",
+        "enum": [
+          "vast"
+        ]
+      },
+      "StorageUpdate": {
+        "type": "object",
+        "properties": {
+          "quota": {
+            "type": "string",
+            "description": "Storage capacity (e.g. 10Ti, 500Gi)"
+          }
+        },
+        "required": [
+          "quota"
+        ]
+      },
+      "Storage": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "clusterName": {
+            "type": "string"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/StorageProvider"
+          },
+          "quota": {
+            "type": "string"
+          },
+          "storagePath": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StorageStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "name",
+          "clusterName",
+          "provider",
+          "quota",
+          "status",
+          "createdAt"
+        ]
+      },
+      "StorageStatus": {
+        "type": "object",
+        "properties": {
+          "phase": {
+            "type": "string",
+            "enum": [
+              "Pending",
+              "Provisioning",
+              "Ready",
+              "Deleting",
+              "Failed"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            }
+          }
+        }
+      },
+      "Quota": {
+        "type": "object",
+        "properties": {
+          "region": {
+            "type": "string"
+          },
+          "maxClusters": {
+            "type": "integer",
+            "description": "Maximum number of clusters. -1 means unlimited."
+          },
+          "currentClusters": {
+            "type": "integer",
+            "description": "Current number of clusters in the region."
+          },
+          "maxStorageGb": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Maximum storage in GB. -1 means unlimited."
+          },
+          "currentStorageGb": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Current storage usage in GB across all clusters in the region."
+          }
+        },
+        "required": [
+          "region",
+          "maxClusters",
+          "currentClusters",
+          "maxStorageGb",
+          "currentStorageGb"
+        ]
+      },
+      "WebhookToken": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "clientId": {
+            "type": "string",
+            "description": "OAuth2 client ID for identification."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "clientId",
+          "createdAt"
+        ]
+      },
+      "WebhookTokenCreate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "WebhookTokenCreated": {
+        "type": "object",
+        "description": "OIDC credentials for NVSentinel event exporter. The client secret is only shown once.",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "clientId": {
+            "type": "string"
+          },
+          "clientSecret": {
+            "type": "string",
+            "description": "OAuth2 client secret. Only returned at creation time."
+          },
+          "tokenUrl": {
+            "type": "string",
+            "description": "OAuth2 token endpoint for client_credentials flow."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "clientId",
+          "clientSecret",
+          "tokenUrl",
+          "createdAt"
+        ]
+      },
+      "NodeHealthEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "region": {
+            "type": "string"
+          },
+          "nodeName": {
+            "type": "string"
+          },
+          "clusterName": {
+            "type": "string"
+          },
+          "eventType": {
+            "type": "string",
+            "description": "Check name from NVSentinel (e.g. XIDError)."
+          },
+          "componentClass": {
+            "type": "string",
+            "description": "Component class (e.g. GPU)."
+          },
+          "agent": {
+            "type": "string",
+            "description": "Source agent name (e.g. gpu-health-monitor)."
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "fatal",
+              "degraded",
+              "healthy"
+            ]
+          },
+          "isFatal": {
+            "type": "boolean"
+          },
+          "isHealthy": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "recommendedAction": {
+            "type": "string"
+          },
+          "errorCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "entitiesImpacted": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "entityType": {
+                  "type": "string"
+                },
+                "entityValue": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of times this event has been observed."
+          },
+          "lastSeenAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the most recent occurrence (null if count is 1)."
+          },
+          "linkedIssues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "channelId": {
+                  "type": "integer"
+                },
+                "issueId": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "id",
+          "region",
+          "nodeName",
+          "eventType",
+          "componentClass",
+          "agent",
+          "severity",
+          "isFatal",
+          "isHealthy",
+          "generatedAt",
+          "count",
+          "receivedAt"
+        ]
+      },
+      "NodeHealthEventList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NodeHealthEvent"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Timestamp cursor for the next page. Null if no more results."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "NotificationChannel": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "slack",
+              "linear"
+            ]
+          },
+          "slack": {
+            "$ref": "#/components/schemas/SlackChannelConfig"
+          },
+          "linear": {
+            "$ref": "#/components/schemas/LinearChannelConfig"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/NotificationChannelFilters"
+          },
+          "messageTemplate": {
+            "type": "string",
+            "description": "Custom message template with {{variable}} placeholders."
+          },
+          "linearResolveStateId": {
+            "type": "string",
+            "description": "Linear workflow state ID to transition issues to on resolution."
+          },
+          "linearLabelIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Linear label IDs to apply to created issues."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "NotificationChannelCreate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "slack",
+              "linear"
+            ]
+          },
+          "slack": {
+            "$ref": "#/components/schemas/SlackChannelConfigCreate"
+          },
+          "linear": {
+            "$ref": "#/components/schemas/LinearChannelConfigCreate"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/NotificationChannelFilters"
+          },
+          "messageTemplate": {
+            "type": "string"
+          },
+          "linearResolveStateId": {
+            "type": "string"
+          },
+          "linearLabelIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ]
+      },
+      "NotificationChannelUpdate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "slack": {
+            "$ref": "#/components/schemas/SlackChannelConfigUpdate"
+          },
+          "linear": {
+            "$ref": "#/components/schemas/LinearChannelConfigUpdate"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/NotificationChannelFilters"
+          },
+          "messageTemplate": {
+            "type": "string"
+          },
+          "linearResolveStateId": {
+            "type": "string"
+          },
+          "linearLabelIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "NotificationChannelFilters": {
+        "type": "object",
+        "description": "Optional routing filters. If empty or omitted, the channel receives all events.",
+        "properties": {
+          "regions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "clusters": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "eventTypes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "SlackChannelConfig": {
+        "type": "object",
+        "description": "Slack configuration (bot token is never returned).",
+        "properties": {
+          "channel": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "channel"
+        ]
+      },
+      "SlackChannelConfigCreate": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "botToken": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "required": [
+          "channel",
+          "botToken"
+        ]
+      },
+      "SlackChannelConfigUpdate": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "botToken": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "required": [
+          "channel"
+        ]
+      },
+      "LinearChannelConfig": {
+        "type": "object",
+        "description": "Linear configuration (API key is never returned).",
+        "properties": {
+          "teamId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "teamId"
+        ]
+      },
+      "LinearChannelConfigCreate": {
+        "type": "object",
+        "properties": {
+          "teamId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "apiKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "required": [
+          "teamId",
+          "apiKey"
+        ]
+      },
+      "LinearChannelConfigUpdate": {
+        "type": "object",
+        "properties": {
+          "teamId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "apiKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "required": [
+          "teamId"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "message"
+        ]
+      }
+    }
+  }
+}

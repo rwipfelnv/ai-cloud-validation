@@ -1,0 +1,679 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# API-shape coverage analysis - offtake requirements vs. a provider's public API.
+#
+# This is a STATIC analysis: does the provider's API surface (paths + schemas)
+# plausibly satisfy each offtake requirement, based on reading the OpenAPI spec
+# alone? No live account, no test run. See ../README.md for methodology and
+# limitations (structural presence != behavioral correctness).
+#
+# Per entry:
+#   req_id   - matches docs/requirements/offtake-requirements.yaml
+#   status   - present   | the API exposes a matching path/schema
+#              partial   | some but not all of the requirement is covered
+#              absent    | no matching surface found in the spec
+#              not_applicable | the requirement isn't something API shape can
+#                          confirm or deny (facility/compliance/policy prose,
+#                          performance numbers, hardware attestation, etc.)
+#   evidence - list of references into spec/mistral-compute-webui-openapi.json:
+#              "METHOD /path" for an operation, "schema:Name" for a schema,
+#              "schema:Name.field" for a specific field. Only schemas reachable
+#              from an actual path are cited as evidence (see caveats - this
+#              spec defines several orphaned/unwired schemas). Empty for
+#              absent/n-a.
+#   notes    - why, in one line.
+
+provider: mistral
+spec: specs/mistral-compute-webui-openapi.json
+spec_source: openapi-mistral-compute-webui-jul17.pretty.json, supplied directly (no public URL - Mistral Compute is sales-gated/early-access, see caveats)
+spec_title: Mistral Compute API 0.2.0 (webui export, 2026-07-17)
+fetched: '2026-09-14'
+caveats:
+  - 'A second, narrower spec ("Compute API" 0.2.0, 24 paths, titled "REST API for Managed Kubernetes Service") was supplied first and is vendored alongside this one as specs/mistral-compute-openapi.json but NOT used for scoring - this richer 56-path spec was designated primary. Where they disagree (e.g. the narrower spec has real /v1/ssh-keys and /v1/quotas paths that are absent here), this file''s reachable surface is authoritative for this analysis, but the discrepancy itself suggests the two exports may be different API versions/audiences and should be reconciled with Mistral/NKX directly rather than treated as final.'
+  - 'The filename indicates this is a "webui" export - i.e. plausibly the web console''s backend API surface rather than a published partner/public API spec. Treat findings as an approximation of Mistral Compute''s real capability, not a confirmed public contract.'
+  - 'This spec defines 28 schemas that are never referenced by any path operation (unreachable via $ref from paths): SSOConnection/SSOEnableRequest/ SSOOnboardingLink (org SSO), MetricsExportConfig and friends (OTLP metrics export), Organization/OrganizationUpdate, the flat Member/MemberInvite/ MemberUpdate (superseded by ProjectMember), SSHKey/SSHKeyCreate, Quota, Permission/MyPermissions, and ProjectOAuth2Client*. Their presence strongly suggests these capabilities exist in the product (or are imminent), but per this tool''s methodology only operations reachable from a real path count as evidence - so requirements that would otherwise map to these (SEC01 SSO, SEC24 domain-based IdP routing, SEC26 SSO enforcement, K8S07 metrics) are scored absent here despite matching schemas existing. This likely UNDERSTATES Mistral''s real capability and is worth confirming directly.'
+mappings:
+  - req_id: BM01
+    status: not_applicable
+    evidence: []
+    notes: Workload benchmark result, not an API-shape question.
+  - req_id: CNP01
+    status: present
+    evidence:
+      - GET /v1/projects/{project}/nodes
+      - POST /v1/projects/{project}/nodes/{nodeName}/reboot
+      - GET /v1/projects/{project}/clusters
+      - GET /v1/roles
+      - POST /v1/rbac/simulate
+      - GET /v1/projects/{project}/breakfix-requests
+    notes: All five sub-asks are covered - lifecycle (reboot + cluster/nodepool CRUD), network config (publicAccess on clusters), topology (Node site/pod/rack/unit), security config (roles/RBAC/service-accounts), and maintenance (breakfix-requests/tickets).
+  - req_id: CNP02
+    status: absent
+    evidence: []
+    notes: Plain imperative REST; no declarative/desired-state resource model or Terraform provider surfaced by the spec.
+  - req_id: CNP03
+    status: absent
+    evidence: []
+    notes: No NVLink/domain field anywhere in Node, NodePool, or HostSelector.
+  - req_id: CNP04
+    status: present
+    evidence:
+      - schema:ClusterStatus.clusterState
+      - schema:NodePoolStatus.phase
+      - schema:StorageStatus.phase
+      - schema:BreakfixStatus
+    notes: Extremely rich state modeling across every resource type, including an explicit "Degraded" cluster state.
+  - req_id: CNP05
+    status: partial
+    evidence:
+      - schema:NodePool.labels
+    notes: Node pool labels (map) exist; no cloud-init/user_data field anywhere in ImageSpec or NodePoolCreate.
+  - req_id: CNP06
+    status: absent
+    evidence: []
+    notes: No console/serial-console endpoint.
+  - req_id: CNP07
+    status: not_applicable
+    evidence: []
+    notes: VM-per-node policy statement; also not applicable in a bare-metal-native product.
+  - req_id: CNP08
+    status: present
+    evidence:
+      - schema:Cluster.name
+      - schema:NodePool.name
+      - schema:Node.name
+      - schema:Project.id
+    notes: Clusters/node pools/nodes are keyed by stable name; Project/ServiceAccount/KMSKey carry a stable id.
+  - req_id: CNP09
+    status: absent
+    evidence: []
+    notes: No firmware/attestation field on Node.
+  - req_id: CNP10
+    status: absent
+    evidence: []
+    notes: No BMC/Redfish endpoint (node reboot exists but isn't exposed as Redfish specifically).
+  - req_id: BOOT01
+    status: present
+    evidence:
+      - schema:NodePoolCreate.image
+      - schema:ImageSpec
+    notes: Node pool image (os/osVersion/arch) is directly settable at node-pool create/update time.
+  - req_id: BOOT02
+    status: absent
+    evidence: []
+    notes: No cloud-init/user_data field anywhere in the spec.
+  - req_id: BOOT03
+    status: absent
+    evidence: []
+    notes: ImageSpec is a fixed os/osVersion/arch selection, not a tenant-uploaded custom image; no /images CRUD endpoint exists.
+  - req_id: BOOT04
+    status: absent
+    evidence: []
+    notes: No local-storage-size field on Node or NodePool.
+  - req_id: SDN01
+    status: absent
+    evidence:
+      - schema:ClusterConfig.podCIDR
+    notes: podCIDR/serviceCIDR are Kubernetes-internal ranges set at cluster creation, not a tenant-facing virtual network resource with CRUD/BYOIP.
+  - req_id: SDN02
+    status: partial
+    evidence:
+      - schema:PublicAPIServerAccessConfig.allowedCIDRs
+    notes: A CIDR-based allow-list exists, but it's scoped only to the cluster's public Kubernetes API server endpoint, not a general security-group resource applicable at workload/node/service/subnet levels.
+  - req_id: SDN03
+    status: partial
+    evidence:
+      - PUT /v1/projects/{project}/clusters/{clusterName}
+      - schema:ClusterUpdate.publicAccess
+      - GET /v1/audit-logs
+    notes: The API-server allow-list is updatable and changes are covered by audit-logs; there's no general security-group CRUD resource though.
+  - req_id: SDN04
+    status: not_applicable
+    evidence: []
+    notes: Physical network segmentation; not confirmable from API shape.
+  - req_id: SDN05
+    status: absent
+    evidence: []
+    notes: No floating/movable IP concept.
+  - req_id: SDN06
+    status: absent
+    evidence: []
+    notes: No DNS configuration endpoint.
+  - req_id: SDN07
+    status: absent
+    evidence: []
+    notes: No VPC concept, so no peering.
+  - req_id: SDN08
+    status: not_applicable
+    evidence: []
+    notes: Physical storage-mesh network property; no distinct storage-host resource in the API to ask this of.
+  - req_id: SDN09
+    status: partial
+    evidence:
+      - GET /v1/audit-logs
+      - GET /v1/projects/{project}/node-events
+    notes: Config-change auditing and GPU/node health events both exist; no network-switch fault/latency telemetry, and no dedicated security-group filtering-rule audit trail.
+  - req_id: SDN10
+    status: absent
+    evidence: []
+    notes: No DNS endpoint.
+  - req_id: K8S01
+    status: not_applicable
+    evidence: []
+    notes: CNCF-conformance certification status isn't confirmable from API shape.
+  - req_id: K8S02
+    status: not_applicable
+    evidence: []
+    notes: Version-support-window SLA, not visible in API shape.
+  - req_id: K8S03
+    status: not_applicable
+    evidence: []
+    notes: EOL notification policy, not visible in API shape.
+  - req_id: K8S04
+    status: not_applicable
+    evidence: []
+    notes: Security Response Committee participation, not visible in API shape.
+  - req_id: K8S05
+    status: present
+    evidence:
+      - GET /v1/projects/{project}/clusters
+      - POST /v1/projects/{project}/clusters
+      - PUT /v1/projects/{project}/clusters/{clusterName}
+      - DELETE /v1/projects/{project}/clusters/{clusterName}
+    notes: Full CRUD control-plane lifecycle, scoped per project; bring-up-time SLA not confirmable from shape.
+  - req_id: K8S06
+    status: present
+    evidence:
+      - POST /v1/projects/{project}/clusters/{clusterName}/nodepools
+      - PUT /v1/projects/{project}/clusters/{clusterName}/nodepools/{nodepoolName}
+      - schema:HostSelector.matchExpressions
+      - schema:NodePool.taints
+    notes: Full node-pool CRUD with labels/taints and label-selector-based host targeting; scaling is a replicas count, so downscaling specific bad nodes isn't directly selectable.
+  - req_id: K8S07
+    status: absent
+    evidence: []
+    notes: MetricsExportConfig (OTLP export) is defined in the spec but not reachable from any path - see caveats. No Prometheus-scrapable API-server metrics endpoint is actually callable here.
+  - req_id: K8S08
+    status: present
+    evidence:
+      - PUT /v1/projects/{project}/clusters/{clusterName}
+      - schema:ClusterUpdate.kubeVersion
+    notes: Control-plane version upgrade is a direct field on the update endpoint.
+  - req_id: K8S09
+    status: partial
+    evidence:
+      - schema:ClusterStatus.clusterState
+    notes: An explicit "Upgrading" cluster state exists, implying an in-place upgrade path; zero-downtime/no-maintenance-window guarantee isn't confirmable from shape alone.
+  - req_id: K8S10
+    status: partial
+    evidence:
+      - PUT /v1/projects/{project}/clusters/{clusterName}/nodepools/{nodepoolName}
+      - schema:NodePoolUpdate.kubeVersion
+    notes: Rolling node-pool version updates exist; PDB-respecting behavior isn't confirmable from shape.
+  - req_id: K8S11
+    status: not_applicable
+    evidence: []
+    notes: Control-plane HA/etcd-separation architecture, not visible in API shape.
+  - req_id: K8S12
+    status: absent
+    evidence: []
+    notes: No backup/restore/DR endpoint.
+  - req_id: K8S14
+    status: not_applicable
+    evidence: []
+    notes: Control-plane physical/network isolation, not visible in API shape.
+  - req_id: K8S15
+    status: present
+    evidence:
+      - schema:Cluster.publicAccess
+      - schema:PublicAPIServerAccessConfig.allowedCIDRs
+    notes: Public Kubernetes API access is opt-in and CIDR-restrictable directly on the cluster resource.
+  - req_id: K8S16
+    status: present
+    evidence:
+      - schema:ServiceAccountOIDCTrust
+      - schema:OIDCClaimRule
+    notes: OIDC trust relationships with claim-matching rules let external tokens (including projected K8s Service Account tokens) assume a platform-managed identity - directly matches the requirement.
+  - req_id: K8S17
+    status: present
+    evidence:
+      - GET /v1/projects/{project}/clusters/{clusterName}/kubeconfig
+      - schema:KubeconfigType
+      - schema:ServiceAccountOIDCTrust.issuer
+    notes: kubeconfig type=oidc plus the OIDC-trust infrastructure (issuer/audiences) used platform-wide is strong evidence of a real cluster OIDC issuer with discovery.
+  - req_id: K8S19
+    status: not_applicable
+    evidence: []
+    notes: etcd/secrets at-rest encryption is internal architecture, not visible in API shape.
+  - req_id: K8S20
+    status: absent
+    evidence: []
+    notes: No control-plane component (apiserver/kcm) log export endpoint.
+  - req_id: K8S21
+    status: present
+    evidence:
+      - schema:ClusterKubeconfig
+    notes: A kubeconfig to a real Kubernetes API server is issued directly, which inherently supports CRDs and admission controllers as standard Kubernetes functionality.
+  - req_id: K8S22
+    status: partial
+    evidence:
+      - schema:PluginsConfig.cni
+    notes: cni is settable to "cilium" (NetworkPolicy-capable, standards-compliant); no IPv4/IPv6 dual-stack field.
+  - req_id: K8S23
+    status: partial
+    evidence:
+      - GET /v1/projects/{project}/clusters/{clusterName}/storage
+      - schema:Storage
+    notes: Cluster-attached storage (VAST-backed) with a quota exists; no explicit CSI-credentials/snapshot/PV-PVC-quota-query surface as described by the requirement.
+  - req_id: K8S24
+    status: present
+    evidence:
+      - schema:NvidiaConfig.draDriver
+    notes: DRA driver is a direct boolean toggle on the cluster's Nvidia plugin config.
+  - req_id: K8S25
+    status: partial
+    evidence:
+      - schema:NvidiaConfig.gpuOperator
+    notes: GPU Operator is a direct toggle; no equivalent explicit Network Operator field, and no "replaceable/overridable" semantics shown.
+  - req_id: K8S26
+    status: present
+    evidence:
+      - GET /v1/projects/{project}/clusters
+      - POST /v1/projects/{project}/clusters
+    notes: Multiple clusters per project are directly supported; no VPC concept exists to test "same VPC" specifically.
+  - req_id: K8S27
+    status: absent
+    evidence: []
+    notes: No control-plane sizing field on ClusterConfig/ClusterCreate.
+  - req_id: K8S28
+    status: not_applicable
+    evidence: []
+    notes: Performance-at-scale claim, not visible in API shape.
+  - req_id: K8S29
+    status: absent
+    evidence: []
+    notes: No LoadBalancer-Service/static-IP field or endpoint.
+  - req_id: K8S30
+    status: absent
+    evidence: []
+    notes: No DNS (CoreDNS forwarding) configuration field.
+  - req_id: K8S31
+    status: partial
+    evidence:
+      - schema:ClusterConfig.podCIDR
+      - schema:ClusterConfig.serviceCIDR
+    notes: Pod and service CIDR are directly configurable at cluster creation; no separate node IP range field.
+  - req_id: SEC01
+    status: absent
+    evidence: []
+    notes: SSOConnection/SSOEnableRequest/SSOOnboardingLink schemas exist but are not reachable from any path in this spec - see caveats. No callable SSO/SAML/OIDC-for-humans endpoint in this export.
+  - req_id: SEC03
+    status: present
+    evidence:
+      - schema:APIKey.expiresAt
+      - schema:APIKey.expiresSoon
+      - schema:APIKey.lastUsedAt
+      - schema:ServiceAccountOAuth2Client.platformManaged
+    notes: API keys and OAuth2 clients both carry expiration, an "expires soon" warning, last-used tracking (enabling unused-credential detection), and platform-managed ownership attribution.
+  - req_id: SEC04
+    status: present
+    evidence:
+      - GET /v1/roles
+      - POST /v1/roles
+      - POST /v1/rbac/simulate
+      - schema:CategoryPermission
+      - schema:RoleScope
+    notes: Custom roles with per-category CRUD permission levels, org-vs-project scope, resource-id allowlisting, and a dry-run simulation endpoint - a genuinely granular RBAC model. GBAC via SCIM-provisioned groups specifically is not present (ProjectMember.role is per-user, no group concept).
+  - req_id: SEC05
+    status: absent
+    evidence: []
+    notes: No LDAP integration endpoint.
+  - req_id: SEC06
+    status: present
+    evidence:
+      - schema:ServiceAccountOIDCTrust
+      - schema:OIDCClaimRule
+    notes: OIDC-based workload/service identity federation with claim-rule matching is a first-class, fully-CRUD-able resource.
+  - req_id: SEC07
+    status: not_applicable
+    evidence: []
+    notes: MFA enforcement is a console/product property, not visible in an OpenAPI spec.
+  - req_id: SEC08
+    status: present
+    evidence:
+      - GET /v1/audit-logs
+      - schema:AuditEvent
+      - schema:AuditEvent.projectSlug
+    notes: Rich audit schema - actor, action, resourceType, resourceName, a changes diff, status, project attribution, timestamp. No explicit export-to-external-store mechanism visible.
+  - req_id: SEC23
+    status: absent
+    evidence: []
+    notes: No SCIM endpoint or schema anywhere in the spec.
+  - req_id: SEC24
+    status: absent
+    evidence: []
+    notes: SSOEnableRequest.domains (email-domain-to-IdP routing) matches this requirement almost exactly by name, but the schema is not reachable from any path - see caveats.
+  - req_id: SEC25
+    status: absent
+    evidence: []
+    notes: No organization-level policy endpoint (Organization itself is orphaned in this spec - see caveats).
+  - req_id: SEC26
+    status: absent
+    evidence: []
+    notes: SSOEnableRequest/SSOOnboardingLink exist but aren't reachable from any path - see caveats.
+  - req_id: SEC27
+    status: present
+    evidence:
+      - GET /v1/projects
+      - POST /v1/projects
+      - GET /v1/projects/{project}/service-accounts
+      - POST /v1/projects/{project}/members
+      - GET /v1/audit-logs
+    notes: Projects are a directly CRUD-able isolation unit (matches the requirement's wording closely), alongside project-scoped service accounts, member invites, and logs.
+  - req_id: SEC09
+    status: present
+    evidence:
+      - GET /v1/kms-keys
+      - POST /v1/kms-keys
+      - POST /v1/kms-keys/{keyId}/rotate
+      - schema:KMSKeyCreate.keyMaterial
+    notes: KMS-backed keys support create, rotate, BYOK import, and org-or-project scoping. Note AuditResourceType's enum has no "kms_key" entry, so key-lifecycle events may not be separately audited despite audit-logs existing generally.
+  - req_id: SEC10
+    status: partial
+    evidence:
+      - schema:KMSKey
+    notes: Managed keys exist as a reference construct ("material never leaves the KMS"), but no field shows which services actually consume a given key (e.g. encrypting a specific Storage volume or cluster secret).
+  - req_id: SEC11
+    status: present
+    evidence:
+      - schema:Project
+      - GET /v1/service-accounts
+      - GET /v1/projects/{project}/service-accounts
+    notes: Project is a real sub-org tenant boundary, and multiple resource types (service-accounts, kms-keys, roles) exist at both org and project scope - concrete evidence of an organization -> project hierarchy.
+  - req_id: SEC12
+    status: not_applicable
+    evidence: []
+    notes: Physical BMC network isolation, not visible in API shape.
+  - req_id: SEC13
+    status: not_applicable
+    evidence: []
+    notes: Transport-layer encryption for general east-west/north-south traffic is a platform property, not visible in API shape.
+  - req_id: SEC14
+    status: present
+    evidence:
+      - schema:PublicAccessConfig
+      - schema:PublicAPIServerAccessConfig.allowedCIDRs
+    notes: '"The presence of apiServer enables public Kubernetes API access" - the schema''s own description implies private-by-default, with an explicit CIDR allow-list required to expose it.'
+  - req_id: SEC15
+    status: partial
+    evidence:
+      - schema:PublicAPIServerAccessConfig.allowedCIDRs
+    notes: CIDR-based source filtering exists for the API server specifically; not a general 5-tuple (protocol+port) security-group resource for arbitrary workload traffic.
+  - req_id: SEC16
+    status: not_applicable
+    evidence: []
+    notes: Asks for a prose description of enforcement tech, not an API-shape question.
+  - req_id: SEC17
+    status: absent
+    evidence: []
+    notes: No GeoIP/threat-feed subscription endpoint.
+  - req_id: SEC18
+    status: not_applicable
+    evidence: []
+    notes: Physical inter-datacenter link protection, not visible in an API spec.
+  - req_id: SEC19
+    status: not_applicable
+    evidence: []
+    notes: Compliance attestation (SOC2), not an API-shape question.
+  - req_id: SEC20
+    status: not_applicable
+    evidence: []
+    notes: Hardware-level at-rest encryption (SED), not visible in API shape.
+  - req_id: SEC21
+    status: absent
+    evidence: []
+    notes: No sanitization/attestation endpoint.
+  - req_id: SEC22
+    status: not_applicable
+    evidence: []
+    notes: Hardware root-of-trust/secure boot, not visible in API shape.
+  - req_id: BFX01
+    status: present
+    evidence:
+      - POST /v1/projects/{project}/nodes/{nodeName}/reboot
+      - POST /v1/projects/{project}/breakfix-requests
+      - schema:BreakfixResourceType
+    notes: 'Node reboot covers power-cycle/reset; breakfix-requests directly cover "return node/rack for maintenance" and host-replacement requests at node, rack, or pod granularity. No dedicated GPU-only reset or explicit "cordon" action (a NoSchedule taint approximates it).'
+  - req_id: BFX02
+    status: present
+    evidence:
+      - GET /v1/projects/{project}/breakfix-requests
+      - schema:BreakfixRequest
+      - schema:BreakfixStatus
+    notes: BreakfixRequest is a purpose-built resource with exactly this shape - stable hardware identifiers (nodeName/site/pod/rack/unit), category (resourceType), org/project attribution, and a detailed status lifecycle. No explicit separate open/update/close dates or "node handover date" field.
+  - req_id: BFX03
+    status: absent
+    evidence: []
+    notes: No serial-number or firmware-version field on Node or BreakfixRequest.
+  - req_id: DIR01
+    status: absent
+    evidence:
+      - schema:Storage.quota
+    notes: Only a whole-filesystem quota field; no uid/gid-level quota or per-uid/gid usage accounting.
+  - req_id: DIR02
+    status: absent
+    evidence: []
+    notes: Storage.provider is just "vast" (a vendor name) - protocol (NFSv4) and POSIX ACL support aren't stated in the schema.
+  - req_id: DIR03
+    status: absent
+    evidence:
+      - schema:Storage
+    notes: No snapshot/restore field or endpoint.
+  - req_id: DIR04
+    status: absent
+    evidence: []
+    notes: No LDAP integration surface.
+  - req_id: HSS01
+    status: present
+    evidence:
+      - GET /v1/projects/{project}/clusters/{clusterName}/storage
+      - PUT /v1/projects/{project}/clusters/{clusterName}/storage/{storageName}
+    notes: Storage provisioning is available directly through the NCP (Compute) API.
+  - req_id: HSS02
+    status: not_applicable
+    evidence: []
+    notes: Throughput/IOPS SLA, not visible in API shape.
+  - req_id: HSS03
+    status: partial
+    evidence:
+      - schema:Storage.clusterName
+      - GET /v1/projects/{project}/breakfix-requests
+    notes: Storage is natively integrated with the cluster (implying CSI-equivalent workload access) and a breakfix-request workflow exists generally, but it isn't shown as explicitly linkable to a storage resource.
+  - req_id: HSS04
+    status: absent
+    evidence:
+      - schema:Storage.quota
+    notes: Only a single whole-filesystem quota field - no uid/gid or per-directory granularity.
+  - req_id: HSS05
+    status: not_applicable
+    evidence: []
+    notes: Maintenance-scheduling policy, not visible in API shape.
+  - req_id: HSS06
+    status: not_applicable
+    evidence: []
+    notes: RDMA memory-protection is a wire-protocol property, not visible in a REST API spec.
+  - req_id: HSS07
+    status: not_applicable
+    evidence: []
+    notes: Filesystem architecture/scale property, not confirmable from API shape.
+  - req_id: HSS08
+    status: not_applicable
+    evidence: []
+    notes: Max filesystem size, not visible in API shape.
+  - req_id: HSS09
+    status: present
+    evidence:
+      - GET /v1/projects/{project}/clusters/{clusterName}/storage
+    notes: Returns a list - multiple named storage objects per cluster are supported.
+  - req_id: HSS10
+    status: present
+    evidence:
+      - PUT /v1/projects/{project}/clusters/{clusterName}/storage/{storageName}
+      - schema:StorageUpdate.quota
+    notes: Storage quota (capacity) is directly updatable in place - live expansion is a first-class operation; linear IOPS/metadata scaling with capacity isn't confirmable from shape.
+  - req_id: HSS11
+    status: not_applicable
+    evidence: []
+    notes: Client packaging/kernel-compat property, not an API-shape question.
+  - req_id: HSS12
+    status: absent
+    evidence:
+      - schema:Storage.quota
+    notes: No user/project/group quota granularity, only a single filesystem-wide field (though the resource itself is now project-scoped, giving a coarser project-level boundary).
+  - req_id: HSS13
+    status: absent
+    evidence: []
+    notes: No root-squash field or toggle.
+  - req_id: HSS14
+    status: not_applicable
+    evidence: []
+    notes: Mount-option support, not visible in a management-plane API spec.
+  - req_id: HSS15
+    status: present
+    evidence:
+      - GET /v1/audit-logs
+      - schema:AuditEvent.changes
+      - schema:AuditEvent.projectSlug
+    notes: Audit events cover the storage resourceType with an old/new value diff and project attribution.
+  - req_id: HSS16
+    status: not_applicable
+    evidence: []
+    notes: Backend HA architecture, not visible in API shape.
+  - req_id: HSS17
+    status: not_applicable
+    evidence: []
+    notes: Client cache-coherency latency, not visible in API shape.
+  - req_id: HSS18
+    status: not_applicable
+    evidence: []
+    notes: Client multipathing, not visible in API shape.
+  - req_id: HSS19
+    status: absent
+    evidence: []
+    notes: No LDAP integration surface.
+  - req_id: DMS01
+    status: present
+    evidence:
+      - POST /v1/projects/{project}/clusters
+    notes: Multiple independent clusters per project are directly supported, so a dedicated data-mover cluster ahead of the GPU cluster is a straightforward API call - this product is Kubernetes-as-a-Service itself.
+  - req_id: DMS02
+    status: partial
+    evidence:
+      - schema:NodePoolCreate.hostSelector
+      - schema:NodePoolCreate.taints
+    notes: A CPU-only node pool can be targeted via hostSelector/taints; no explicit "high-performance networking" attribute is exposed to request it.
+  - req_id: DMS03
+    status: present
+    evidence:
+      - schema:Storage.clusterName
+    notes: Storage is scoped to the whole cluster (not a single node pool), so any node pool in that cluster - including a CPU data-mover pool - has access to the same storage.
+  - req_id: DMS04
+    status: not_applicable
+    evidence: []
+    notes: Physical/network link to NVIDIA corp net, not an API-shape question.
+  - req_id: DMS05
+    status: absent
+    evidence: []
+    notes: No stable egress/NAT IP allocation concept.
+  - req_id: STG01
+    status: absent
+    evidence: []
+    notes: No storage-host-level OS/image provisioning surface - Storage is a managed filesystem abstraction (fixed provider "vast"), not a host to provision.
+  - req_id: STG02
+    status: absent
+    evidence: []
+    notes: No sanitization endpoint.
+  - req_id: STG03
+    status: not_applicable
+    evidence: []
+    notes: No separate storage-host resource exists in the API to assign a stable IP to.
+  - req_id: STG04
+    status: partial
+    evidence:
+      - GET /v1/projects/{project}/node-events
+      - schema:NodeHealthEvent
+    notes: NVSentinel-sourced node-events cover out-of-band compute-node hardware failure detection (GPU, etc.); no explicit storage-node failure-detection surface.
+  - req_id: STG05
+    status: present
+    evidence:
+      - schema:Node.site
+      - schema:Node.pod
+      - schema:Node.rack
+      - schema:Node.unit
+      - schema:Node.topology
+    notes: Physical topology (site/pod/rack/unit, plus a generic topology map) is directly exposed per node, enabling failure-domain-aware provisioning decisions.
+  - req_id: STG06
+    status: absent
+    evidence: []
+    notes: No BlueField/DPU-specific field.
+  - req_id: NET01
+    status: partial
+    evidence:
+      - schema:Node.pod
+      - schema:Node.rack
+      - schema:Node.topology
+    notes: Physical grouping (pod/rack/unit, generic topology map) approximates a connectivity domain; no explicit switch identifier or leaf/spine/core tiering field.
+  - req_id: NET02
+    status: absent
+    evidence: []
+    notes: No NVLink domain field.
+  - req_id: NET03
+    status: absent
+    evidence: []
+    notes: No BYOIP/IP-allocation/routing surface - podCIDR/serviceCIDR are Kubernetes-internal only, and PublicAPIServerAccessConfig is access control, not IP allocation.
+  - req_id: NET04
+    status: not_applicable
+    evidence: []
+    notes: Physical interconnect provisioning, not an API-shape question.
+  - req_id: NET05
+    status: not_applicable
+    evidence: []
+    notes: Physical interconnect to DGXC storage, not an API-shape question.
+  - req_id: NET06
+    status: absent
+    evidence: []
+    notes: No dedicated egress-NAT-pool concept.
+  - req_id: CAP01
+    status: partial
+    evidence:
+      - GET /v1/projects/{project}/nodes
+      - schema:Node.state
+    notes: Per-node health/state and project scoping exist; no single rolled-up Delivered/Healthy/Reserved/Active-in-use governance-metrics endpoint.
+  - req_id: CAP02
+    status: partial
+    evidence:
+      - schema:Node.name
+      - schema:Node.state
+      - schema:Node.deviceType
+      - schema:Node.createdAt
+    notes: NodeID/health-state/hardware-type/creation-timestamp are present, and the endpoint is now project-scoped (Account/Project ask partly covered); still no explicit GPU-count field.
+  - req_id: CAP03
+    status: partial
+    evidence:
+      - GET /v1/projects/{project}/nodes
+    notes: Node inventory is discoverable via a centralized, project-scoped API; no "reason for delivery" field (capacity fulfillment vs. RMA return) and no distinct new-capacity event stream.
+  - req_id: CAP04
+    status: partial
+    evidence:
+      - schema:TicketNodeMoveRequest
+    notes: TicketNodeMoveRequest is a real (if indirect, request-based rather than declarative) mechanism to move capacity between projects; no atomic "topology block" reservation primitive.
+  - req_id: CAP05
+    status: present
+    evidence:
+      - schema:Node.state
+      - schema:ClusterStatus
+      - schema:NodePoolStatus
+      - schema:BreakfixStatus
+      - GET /v1/projects/{project}/node-events
+    notes: Per-host health (Node.state, node-events) and primitive-level aggregation (cluster/node-pool/breakfix status and conditions) are both present, forming a genuinely unified health picture.
