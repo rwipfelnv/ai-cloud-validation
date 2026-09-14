@@ -49,7 +49,7 @@ account-specific `deployments/`): `~/git/terraform-at-nvidia/` (not
 committed to this repo - internal GitLab source, kept out of the public repo
 deliberately).
 
-## Proposed two-phase approach
+## Proposed three-phase approach
 
 ### Phase 1 - static feasibility (done, for Lambda)
 
@@ -116,3 +116,22 @@ console-provisioned only).
   change - same reconciliation process as `docs/requirements/README.md`?
 - Should Phase 2's rollup become part of `validate`'s CI guardrail, or stay
   report-only until more providers exist?
+
+## Context
+
+Written by Claude with the context of prior work on
+`docs/requirements/api-coverage/` (this repo, branch
+`feat/api-coverage-analysis`) plus access to all of the Terraform code under
+`https://gitlab-master.nvidia.com/terraform-at-nvidia` plus this starting
+point prompt for some back/forth discussion:
+
+> I am told that all of those repos represent the "shape" of terraform
+> integration for each NCP/neocloud. We need to somehow use what's there
+> (maybe in templates) to determine what that "standard terraform"
+> integration looks like, then we need to see if it's theoretically possible
+> to generate terraform from any NCP/neocloud per that standard, given the
+> APIs they have instead of terraform. Our goal is to see if we can develop
+> what we consider to be the ideal Terraform integration on behalf of
+> NCP/neoclouds that are API first and don't have their own terraform. Our
+> requirement is to be able to invoke Terraform per the pattern of our
+> existing integrations.
