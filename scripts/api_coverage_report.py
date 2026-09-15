@@ -156,17 +156,34 @@ def validate(provider: str) -> int:
     return 0
 
 
+def _escape_md(text: str) -> str:
+    """Escape characters that would break a Markdown table cell."""
+    return text.replace("|", "\\|").replace("\n", " ")
+
+
 def report(provider: str) -> int:
-    """Print a per-section coverage report grouped by offtake section."""
+    """Print a per-section coverage report, as Markdown, grouped by offtake section.
+
+    Plain single-newline-separated lines collapse into one run-on paragraph when
+    pasted as Markdown into a doc editor (e.g. Google Docs) - so this emits real
+    Markdown (heading, bullet list, tables) rather than fixed-width text, and is
+    safe to paste directly.
+    """
     reqs = load_offtake_requirements()
     coverage = load_coverage(provider)
     mappings = {m["req_id"]: m for m in coverage["mappings"]}
 
-    print(f"API-shape coverage: {coverage.get('spec_title', provider)} vs. offtake requirements v2.3.1")
-    print(f"spec: {coverage.get('spec_source', '?')} (fetched {coverage.get('fetched', '?')})")
-    for caveat in coverage.get("caveats", []):
-        print(f"CAVEAT: {caveat}")
+    print(f"# API-shape coverage: {coverage.get('spec_title', provider)} vs. offtake requirements v2.3.1")
     print()
+    print(f"*Spec: {_escape_md(coverage.get('spec_source', '?'))} (fetched {coverage.get('fetched', '?')})*")
+
+    caveats = coverage.get("caveats", [])
+    if caveats:
+        print()
+        print("## Caveats")
+        print()
+        for caveat in caveats:
+            print(f"- {_escape_md(caveat)}")
 
     totals = dict.fromkeys(STATUSES, 0)
     sections: dict[str, list[str]] = {}
@@ -174,26 +191,34 @@ def report(provider: str) -> int:
         sections.setdefault(req["section"], []).append(req_id)
 
     for section in sections:
+        print()
         print(f"## {section}")
+        print()
+        print("| req_id | status | area |")
+        print("| --- | --- | --- |")
         for req_id in sections[section]:
             m = mappings.get(req_id)
             status = m["status"] if m else "unmapped"
             totals[status] = totals.get(status, 0) + 1
             area = reqs[req_id]["area"] or reqs[req_id]["subsection"]
-            print(f"  {req_id:<10} {status:<15} {area}")
-        print()
+            print(f"| {req_id} | {status} | {_escape_md(area)} |")
 
+    print()
     print("## Summary")
+    print()
+    print("| status | count |")
+    print("| --- | --- |")
     for status in ("present", "partial", "absent", "not_applicable"):
-        print(f"  {status:<15} {totals.get(status, 0)}")
+        print(f"| {status} | {totals.get(status, 0)} |")
     if totals.get("unmapped"):
-        print(f"  {'unmapped':<15} {totals['unmapped']}")
+        print(f"| unmapped | {totals['unmapped']} |")
 
     checkable = totals["present"] + totals["partial"] + totals["absent"]
     if checkable:
         score = (totals["present"] + 0.5 * totals["partial"]) / checkable
+        print()
         print(
-            f"\n  API-shape coverage score (excludes not_applicable/unmapped): {score:.0%} of {checkable} checkable requirements"
+            f"**API-shape coverage score** (excludes not_applicable/unmapped): {score:.0%} of {checkable} checkable requirements"
         )
     return 0
 
