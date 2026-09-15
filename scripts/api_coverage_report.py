@@ -162,10 +162,10 @@ def report(provider: str) -> int:
     coverage = load_coverage(provider)
     mappings = {m["req_id"]: m for m in coverage["mappings"]}
 
-    print(f"# API-shape coverage: {coverage.get('spec_title', provider)} vs. offtake requirements v2.3.1")
-    print(f"# spec: {coverage.get('spec_source', '?')} (fetched {coverage.get('fetched', '?')})")
+    print(f"API-shape coverage: {coverage.get('spec_title', provider)} vs. offtake requirements v2.3.1")
+    print(f"spec: {coverage.get('spec_source', '?')} (fetched {coverage.get('fetched', '?')})")
     for caveat in coverage.get("caveats", []):
-        print(f"# CAVEAT: {caveat}")
+        print(f"CAVEAT: {caveat}")
     print()
 
     totals = dict.fromkeys(STATUSES, 0)
